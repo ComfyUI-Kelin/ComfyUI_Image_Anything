@@ -6,6 +6,7 @@ import torch
 from PIL import Image, ImageOps, ImageSequence
 import folder_paths
 import comfy.model_management
+from .auto_queue_control import stop_current_iteration
 
 # 支持的图片格式
 SUPPORTED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.bmp', '.webp', '.tiff', '.tif', '.gif'}
@@ -138,11 +139,16 @@ class ImageIterator:
             if mode == "loop":
                 current_index = 0
             else:
-                # sequential 模式，迭代结束，中断处理
-                # 重置计数器以便下次使用
-                ImageIterator._counters[counter_key] = 0
-                comfy.model_management.interrupt_current_processing()
-                raise comfy.model_management.InterruptProcessingException()
+                # sequential 模式下保留完成态，避免 Auto Queue 在下一轮重新从 0 开始。
+                # 重新开始必须显式触发 reset，或修改 start_index / 目录内容。
+                ImageIterator._counters[counter_key] = total_count
+                stop_current_iteration(
+                    "ImageIterator",
+                    folder_path=folder_path,
+                    sort_by=sort_by,
+                    mode=mode,
+                    total_count=total_count,
+                )
 
         # 加载当前图片
         image_filename = image_files[current_index]

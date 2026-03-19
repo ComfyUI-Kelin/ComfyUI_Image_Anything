@@ -2,13 +2,8 @@ import os
 import torch
 import numpy as np
 from PIL import Image, ImageOps
-import signal
-import sys
 import fnmatch
-
-def interrupt_handler(signum, frame):
-    print("Process interrupted")
-    sys.exit(0)
+from .auto_queue_control import stop_current_iteration
 
 # Global counter to track iteration progress per directory
 _LOADER_COUNTERS = {}
@@ -60,7 +55,7 @@ class EditDatasetLoader:
         
         if not os.path.exists(input_dir):
             print(f"EditDatasetLoader: Directory {input_dir} not found.")
-            return (self._empty_image(), self._empty_image(), "")
+            return self._empty_result(input_dir=input_dir)
 
         valid_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.tiff'}
         
@@ -84,7 +79,7 @@ class EditDatasetLoader:
         
         if not files:
             print(f"EditDatasetLoader: No images found in {input_dir} (Suffix: {target_img_suffix})")
-            return (self._empty_image(), self._empty_image(), "")
+            return self._empty_result(input_dir=input_dir)
 
         # Parse index_list if provided
         target_indices = None
@@ -116,9 +111,16 @@ class EditDatasetLoader:
             
             if list_position >= len(target_indices):
                 print(f"EditDatasetLoader: All {len(target_indices)} specified indices processed. Stopping workflow.")
-                signal.signal(signal.SIGINT, interrupt_handler)
-                signal.raise_signal(signal.SIGINT)
-                return (self._empty_image(), self._empty_image(), "")
+                _LOADER_COUNTERS[key] = len(target_indices)
+                stop_current_iteration(
+                    "EditDatasetLoader",
+                    input_dir=input_dir,
+                    iteration_mode="index_list",
+                    total_count=len(files),
+                    processed_count=len(target_indices),
+                    target_indices=target_indices,
+                )
+                return self._empty_result(input_dir=input_dir)
             
             final_index = target_indices[list_position]
             
@@ -126,7 +128,7 @@ class EditDatasetLoader:
                 print(f"EditDatasetLoader: Index {final_index} out of range (Total: {len(files)}). Skipping.")
                 if auto_next:
                     _LOADER_COUNTERS[key] += 1
-                return (self._empty_image(), self._empty_image(), "")
+                return self._empty_result(input_dir=input_dir, current_index=final_index)
         else:
             # Sequential mode: original behavior
             final_index = start_index
@@ -135,9 +137,17 @@ class EditDatasetLoader:
 
             if final_index >= len(files):
                 print(f"EditDatasetLoader: Index {final_index} out of range (Total: {len(files)}). Stopping workflow.")
-                signal.signal(signal.SIGINT, interrupt_handler)
-                signal.raise_signal(signal.SIGINT)
-                return (self._empty_image(), self._empty_image(), "")
+                if auto_next:
+                    _LOADER_COUNTERS[key] = len(files)
+                stop_current_iteration(
+                    "EditDatasetLoader",
+                    input_dir=input_dir,
+                    iteration_mode="sequential" if auto_next else "fixed_index",
+                    total_count=len(files),
+                    current_index=final_index,
+                    start_index=start_index,
+                )
+                return self._empty_result(input_dir=input_dir, current_index=final_index)
 
         # Get Image
         filename = files[final_index]
@@ -219,6 +229,9 @@ class EditDatasetLoader:
 
     def _empty_image(self):
         return torch.zeros((1, 512, 512, 3), dtype=torch.float32)
+
+    def _empty_result(self, input_dir="", current_index=-1):
+        return (self._empty_image(), self._empty_image(), "", input_dir, current_index)
 
 
 class EditDatasetSaver:
