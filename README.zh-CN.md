@@ -1,21 +1,19 @@
 # ComfyUI Image Anything
 
-[**English**](README.md) | **中文**
+[**English**](README.md) | **中文** | [**日本語**](README.ja.md) | [**한국어**](README.ko.md)
 
 [![GitHub stars](https://img.shields.io/github/stars/ComfyUI-Kelin/ComfyUI_Image_Anything?style=flat&logo=github&color=181717&labelColor=282828)](https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything)
 [![License: MIT](https://img.shields.io/badge/License-MIT-10B981?style=flat&labelColor=1a1a2e)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/ComfyUI-Custom_Nodes-6366F1?style=flat&labelColor=1a1a2e&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJMMyA3djEwbDkgNSA5LTVWN3oiLz48L3N2Zz4=)](https://github.com/comfyanonymous/ComfyUI)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&labelColor=1a1a2e&logo=python&logoColor=white)](https://www.python.org/)
 
-**ComfyUI Image Anything** 提供四大核心功能：
+**ComfyUI Image Anything** 提供三大核心功能：
 
 1. **批量保存工作流输出**：在一次任务运行中批量保存不同阶段的图片和文本，自动整理到统一的时间戳文件夹中。通过模块化设计（Image Batch + Text Batch + BatchImageSaverV2），你可以灵活组合任意数量的图片批次和文本批次。
 
 2. **数据集自动标注**：专为制作图像编辑模型（如 Qwen Edit、Kontext）训练数据集设计。提供自动迭代加载、结构化保存、失败重跑等功能，大幅提升数据集制作效率。
 
-3. **分桶图像标准化**：专为 SDXL/Flux 模型训练优化。智能检测图片比例，自动归一化到 `ai-toolkit` 支持的标准训练 Bucket 分辨率，确保零拉伸、无黑边。
-
-4. **图片文件夹迭代器**：从指定文件夹中逐张加载图片并执行工作流，配合 Auto Queue 实现全自动批量处理。支持提取文件名、自定义保存路径，适合批量图片处理场景。
+3. **图片文件夹迭代器**：从指定文件夹中逐张加载图片并执行工作流，配合 Auto Queue 实现全自动批量处理。支持递归扫描子文件夹、提取文件名、自定义保存路径，适合批量图片处理场景。
 
 ## 安装方法
 
@@ -30,22 +28,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 
 ## 节点参数详解
 
-### 1. 智能分桶预处理 (`Preprocess`)
-**Smart Image Resize for Bucket**
-专为训练准备的图像预处理节点。它会自动将任意比例的图片 Center Crop 到最接近的标准 Bucket 尺寸。
-
-*   **image**: 输入图片
-*   **mode**: 处理模式
-    *   `Smart (Auto Detect)`: (推荐) 自动计算宽高比，匹配最接近的标准尺寸 (1:1, 3:4, 4:3, 9:16, 16:9)。
-    *   `Force 1024x1024 (1:1)`: 强制方形
-    *   `Force 832x1152 (3:4)`: 强制标准竖图 (人像常用)
-    *   `Force 1152x832 (4:3)`: 强制标准横图
-    *   `Force 768x1344 (9:16)`: 强制长竖图 (手机壁纸)
-    *   `Force 1344x768 (16:9)`: 强制宽屏横图
-
-> **支持的 SDXL/Flux 标准 Bucket**: 1024x1024, 832x1152, 1152x832, 768x1344, 1344x768.
-
-### 2. 自动数据集标注 (`Edit_Image`)
+### 1. 自动数据集标注 (`Edit_Image`)
 这些是专为自动化制作模型数据集（如 Qwen Edit、Kontext 等）设计的新节点。
 
 **EditDatasetLoader**:
@@ -93,7 +76,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 无需任何额外设置。只要 `EditDatasetLoader` 获取到了干净的 `filename_stem`，Saver 就会自动以该名字保存所有输出文件（Control/Target/Txt），确保文件名一致。
 若要路径透传，可将 `directory` 连接到 Saver 的 `output_dir`。
 
-### 3. V2 模块化批量保存 (`Batch_Save`)
+### 2. V2 模块化批量保存 (`Batch_Save`)
 
 #### Image Batch 节点 (`image_batch`)
 - **image_1 到 image_5** (可选): 最多5张图片输入
@@ -118,12 +101,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 
 ## 使用示例
 
-### 场景一：自动清洗数据集 (Auto Clean Dataset)
-1.  **加载**: 使用 `EditDatasetLoader` 读取原始图片文件夹。
-2.  **处理**: 连接 `Smart Image Resize for Bucket` 节点，模式设为 `Smart (Auto Detect)`。
-3.  **保存**: 连接 `EditDatasetSaver` (或普通 Save Image)，即可得到完美符合训练标准的数据集。
-
-### 场景二：自动标注数据集流程 (`Edit Dataset Workflow`)
+### 场景一：自动标注数据集流程 (`Edit Dataset Workflow`)
 这是一个专门用于构建和标注图像编辑模型数据集的流程：
 1. **加载图片**: 使用 `EditDatasetLoader` 指向你的图片文件夹。
 2. **处理流程**: 在中间连接任意的处理节点（如图像反推提示词、抠图、风格迁移等）。
@@ -143,7 +121,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
    - `allow_overwrite`: 开启 `True`（允许覆盖旧的错误结果）。
 3. **运行**：节点只处理这 3 张图片，完成后自动停止。
 
-### 场景三：多批次组合保存 (V2)
+### 场景二：多批次组合保存 (V2)
 ```
 [图片1-5] → [Image Batch A] → batch_1 → \
 [文本A] → [Text Batch A] → text_batch_1 →  → [Batch Image Saver V2]
@@ -151,7 +129,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 [文本B] → [Text Batch B] → text_batch_2 → /
 ```
 
-### 4. 图片文件夹迭代器 (`Iterator`)
+### 3. 图片文件夹迭代器 (`Iterator`)
 
 **Image Iterator**
 从指定文件夹中逐张迭代加载图片，每次执行加载一张，配合 ComfyUI 的 Auto Queue 模式可自动遍历整个文件夹。支持递归扫描子文件夹，并输出子文件夹路径以便保存时保持原始目录结构。
@@ -221,7 +199,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
       └── dog1.png
 ```
 
-### 5. 文本阻塞器 (`Text`)
+### 4. 文本阻塞器 (`Text`)
 
 **Text Blocker**
 
@@ -259,7 +237,6 @@ output/
 
 | 分类 | 路径 | 节点 |
 |------|------|------|
-| 预处理 | `🚦 ComfyUI_Image_Anything` → `Preprocess` | Smart Image Resize for Bucket |
 | 数据集 | `🚦 ComfyUI_Image_Anything` → `Edit_Image` | EditDatasetLoader, EditDatasetSaver |
 | 批量保存 | `🚦 ComfyUI_Image_Anything` → `Batch_Save` | Batch Image Saver V2, Image Collector, Text Collector |
 | 迭代器 | `🚦 ComfyUI_Image_Anything` → `Iterator` | Image Iterator, Image Saver |
