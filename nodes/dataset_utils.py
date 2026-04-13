@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import torch
 import numpy as np
 from PIL import Image, ImageOps
@@ -335,7 +336,7 @@ class EditDatasetSaver:
 
         else:
             # Keep Original logic
-            final_name = filename_stem if filename_stem else f"unknown_{index}"
+            final_name = filename_stem if filename_stem else f"unknown_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
 
         print(f"EditDatasetSaver: Saving {final_name} (Style: {naming_style})...")
 
