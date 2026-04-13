@@ -48,6 +48,12 @@ class ImageIterator:
                     "default": "sequential",
                     "tooltip": "sequential: 迭代完所有图片后停止; loop: 循环迭代"
                 }),
+                "recursive": ("BOOLEAN", {
+                    "default": False,
+                    "label_on": "Recursive",
+                    "label_off": "Current Only",
+                    "tooltip": "是否递归扫描子文件夹中的图片"
+                }),
             },
             "optional": {
                 "start_index": ("INT", {
@@ -66,30 +72,43 @@ class ImageIterator:
             },
         }
 
-    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "INT", "INT")
-    RETURN_NAMES = ("image", "mask", "filename", "filename_with_ext", "current_index", "total_count")
+    RETURN_TYPES = ("IMAGE", "MASK", "STRING", "STRING", "STRING", "INT", "INT")
+    RETURN_NAMES = ("image", "mask", "filename", "filename_with_ext", "subfolder", "current_index", "total_count")
     FUNCTION = "load_next_image"
     OUTPUT_NODE = False
     CATEGORY = "🚦 ComfyUI_Image_Anything/Iterator"
     DESCRIPTION = "从文件夹中逐张迭代加载图片，配合Auto Queue使用可自动遍历整个文件夹"
 
     @classmethod
-    def _get_counter_key(cls, folder_path, sort_by):
+    def _get_counter_key(cls, folder_path, sort_by, recursive=False):
         """生成唯一的计数器键"""
-        return f"{folder_path}|{sort_by}"
+        return f"{folder_path}|{sort_by}|{recursive}"
 
     @classmethod
-    def _get_image_list(cls, folder_path, sort_by):
-        """获取排序后的图片文件列表"""
+    def _get_image_list(cls, folder_path, sort_by, recursive=False):
+        """获取排序后的图片文件列表
+
+        返回相对于 folder_path 的相对路径列表。
+        非递归模式下返回纯文件名（如 'image.png'），
+        递归模式下返回含子目录的相对路径（如 'sub/dir/image.png'）。
+        """
         if not os.path.isdir(folder_path):
             return []
 
         files = []
-        for f in os.listdir(folder_path):
-            ext = os.path.splitext(f)[1].lower()
-            full_path = os.path.join(folder_path, f)
-            if ext in SUPPORTED_EXTENSIONS and os.path.isfile(full_path):
-                files.append(f)
+        if recursive:
+            for root, _dirs, filenames in os.walk(folder_path):
+                for f in filenames:
+                    ext = os.path.splitext(f)[1].lower()
+                    if ext in SUPPORTED_EXTENSIONS:
+                        rel_path = os.path.relpath(os.path.join(root, f), folder_path)
+                        files.append(rel_path)
+        else:
+            for f in os.listdir(folder_path):
+                ext = os.path.splitext(f)[1].lower()
+                full_path = os.path.join(folder_path, f)
+                if ext in SUPPORTED_EXTENSIONS and os.path.isfile(full_path):
+                    files.append(f)
 
         if sort_by == "name_asc":
             files.sort()
@@ -103,7 +122,7 @@ class ImageIterator:
         return files
 
     def load_next_image(self, folder_path, sort_by="name_asc", mode="sequential",
-                        start_index=0, reset=False):
+                        recursive=False, start_index=0, reset=False):
         """
         加载文件夹中的下一张图片
 
@@ -111,6 +130,7 @@ class ImageIterator:
             folder_path: 图片文件夹路径
             sort_by: 排序方式
             mode: 迭代模式 (sequential/loop)
+            recursive: 是否递归扫描子文件夹
             start_index: 起始索引
             reset: 是否重置迭代器
         """
@@ -119,14 +139,14 @@ class ImageIterator:
             raise ValueError(f"无效的文件夹路径: {folder_path}")
 
         # 获取图片列表
-        image_files = self._get_image_list(folder_path, sort_by)
+        image_files = self._get_image_list(folder_path, sort_by, recursive)
         total_count = len(image_files)
 
         if total_count == 0:
             raise ValueError(f"文件夹中没有找到支持的图片文件: {folder_path}")
 
         # 获取/更新计数器
-        counter_key = self._get_counter_key(folder_path, sort_by)
+        counter_key = self._get_counter_key(folder_path, sort_by, recursive)
 
         if reset or counter_key not in ImageIterator._counters:
             # 重置或首次运行，使用 start_index
@@ -150,11 +170,13 @@ class ImageIterator:
                     total_count=total_count,
                 )
 
-        # 加载当前图片
-        image_filename = image_files[current_index]
-        image_path = os.path.join(folder_path, image_filename)
+        # 加载当前图片（image_files 中存储的是相对路径）
+        image_rel_path = image_files[current_index]
+        image_path = os.path.join(folder_path, image_rel_path)
 
-        # 提取文件名（不含扩展名）
+        # 提取子文件夹路径和文件名
+        subfolder = os.path.dirname(image_rel_path)
+        image_filename = os.path.basename(image_rel_path)
         filename_no_ext = os.path.splitext(image_filename)[0]
 
         # 使用与 ComfyUI LoadImage 一致的方式加载图片
@@ -200,13 +222,13 @@ class ImageIterator:
         ImageIterator._counters[counter_key] = current_index + 1
 
         return (output_image, output_mask, filename_no_ext, image_filename,
-                current_index, total_count)
+                subfolder, current_index, total_count)
 
     @classmethod
     def IS_CHANGED(cls, folder_path, sort_by="name_asc", mode="sequential",
-                   start_index=0, reset=False):
+                   recursive=False, start_index=0, reset=False):
         """每次都返回不同的值，确保节点在 Auto Queue 模式下重新执行"""
-        counter_key = cls._get_counter_key(folder_path, sort_by)
+        counter_key = cls._get_counter_key(folder_path, sort_by, recursive)
         current = cls._counters.get(counter_key, start_index)
         # 返回当前索引作为变化标识，确保每次执行都被视为"已变化"
         return f"{current}_{reset}"
