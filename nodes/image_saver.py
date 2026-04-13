@@ -34,7 +34,13 @@ class ImageSaver:
                     "tooltip": "图片保存的文件夹路径"
                 }),
             },
-            "optional": {},
+            "optional": {
+                "subfolder": ("STRING", {
+                    "default": "",
+                    "forceInput": True,
+                    "tooltip": "子文件夹路径，可从 Image Iterator 的 subfolder 输出连接，保存时自动保持原始目录结构"
+                }),
+            },
         }
 
     RETURN_TYPES = ("STRING",)
@@ -44,12 +50,16 @@ class ImageSaver:
     CATEGORY = "🚦 ComfyUI_Image_Anything/Iterator"
     DESCRIPTION = "保存处理后的图片，支持自定义路径和文件名，可配合 Image Iterator 使用"
 
-    def save_image(self, image, filename, save_path=""):
+    def save_image(self, image, filename, save_path="", subfolder=""):
         # 确定保存目录
         if save_path and save_path.strip():
             output_dir = save_path.strip()
         else:
             output_dir = folder_paths.get_output_directory()
+
+        # 如果有子文件夹路径，在保存目录下创建相同的目录结构
+        if subfolder and subfolder.strip():
+            output_dir = os.path.join(output_dir, subfolder.strip())
 
         os.makedirs(output_dir, exist_ok=True)
 
