@@ -1,13 +1,13 @@
 # ComfyUI Image Anything
 
-**English** | [**中文**](README.zh-CN.md)
+**English** | [**中文**](README.zh-CN.md) | [**日本語**](README.ja.md) | [**한국어**](README.ko.md)
 
 [![GitHub stars](https://img.shields.io/github/stars/ComfyUI-Kelin/ComfyUI_Image_Anything?style=flat&logo=github&color=181717&labelColor=282828)](https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything)
 [![License: MIT](https://img.shields.io/badge/License-MIT-10B981?style=flat&labelColor=1a1a2e)](LICENSE)
 [![ComfyUI](https://img.shields.io/badge/ComfyUI-Custom_Nodes-6366F1?style=flat&labelColor=1a1a2e&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJMMyA3djEwbDkgNSA5LTVWN3oiLz48L3N2Zz4=)](https://github.com/comfyanonymous/ComfyUI)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&labelColor=1a1a2e&logo=python&logoColor=white)](https://www.python.org/)
 
-A comprehensive set of ComfyUI custom nodes for **batch image processing**, **dataset preparation**, **smart resizing**, and **folder iteration** — designed to streamline repetitive image workflows.
+A comprehensive set of ComfyUI custom nodes for **batch image processing**, **dataset preparation**, and **folder iteration** — designed to streamline repetitive image workflows.
 
 ## Core Features
 
@@ -23,12 +23,7 @@ Purpose-built for creating training datasets for image editing models (Qwen Edit
 - **EditDatasetLoader**: Iterates through image folders with auto-stop, index lists for re-processing failed images, and paired data loading (target + control images)
 - **EditDatasetSaver**: Structured saving with original or auto-incremented naming, overwrite control, and multi-format output (jpg/png/webp)
 
-### 3. Smart Bucket Resizing
-Optimized for SDXL/Flux model training — automatically detects aspect ratio and center-crops to the nearest standard bucket resolution with zero stretching and no black bars.
-- Supported buckets: 1024x1024, 832x1152, 1152x832, 768x1344, 1344x768
-- Modes: Smart auto-detect or force specific ratio
-
-### 4. Batch Workflow Saving
+### 3. Batch Workflow Saving
 Save images and text from multiple workflow stages into organized timestamp folders.
 - **Image Collector + Text Collector + Batch Image Saver V2**: Modular design, combine any number of image and text batches
 - Auto-generates metadata.json and saves the full ComfyUI workflow for reproducibility
@@ -72,7 +67,6 @@ Search for **"ComfyUI_Image_Anything"** in ComfyUI Manager and install.
 |----------|------|-------------|
 | Iterator | **Image Iterator** | Load images one-by-one from a folder with Auto Queue support |
 | Iterator | **Image Saver** | Save processed images with optional subfolder structure preservation |
-| Preprocess | **Smart Image Resize for Bucket** | Auto center-crop to SDXL/Flux standard training resolutions |
 | Dataset | **EditDatasetLoader** | Iterate dataset images with paired loading and failure re-processing |
 | Dataset | **EditDatasetSaver** | Save dataset outputs with structured naming and format control |
 | Batch Save | **Batch Image Saver V2** | Dynamic batch saving with timestamp organization |
@@ -86,7 +80,6 @@ All nodes are under the `ComfyUI_Image_Anything` category (marked with a traffic
 
 | Subcategory | Path |
 |-------------|------|
-| Preprocess | `ComfyUI_Image_Anything` > `Preprocess` |
 | Dataset | `ComfyUI_Image_Anything` > `Edit_Image` |
 | Batch Save | `ComfyUI_Image_Anything` > `Batch_Save` |
 | Iterator | `ComfyUI_Image_Anything` > `Iterator` |

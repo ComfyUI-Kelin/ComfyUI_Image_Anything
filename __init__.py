@@ -2,7 +2,6 @@
 from . import folder_picker_routes  # noqa: F401
 from .nodes.batch_image_saver import BatchImageSaverV2, ImageCollector, TextCollector
 from .nodes.dataset_utils import EditDatasetLoader, EditDatasetSaver
-from .nodes.smart_resize import SmartImageResizeForBucket
 from .nodes.text_blocker import TextBlocker
 from .nodes.image_iterator import ImageIterator
 from .nodes.image_saver import ImageSaver
@@ -14,7 +13,6 @@ NODE_CLASS_MAPPINGS = {
     "TextCollector": TextCollector,
     "EditDatasetLoader": EditDatasetLoader,
     "EditDatasetSaver": EditDatasetSaver,
-    "SmartImageResizeForBucket": SmartImageResizeForBucket,
     "TextBlocker": TextBlocker,
     "ImageIterator": ImageIterator,
     "ImageSaver": ImageSaver,
@@ -27,7 +25,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "TextCollector": "Text Collector",
     "EditDatasetLoader": "Edit Dataset Loader",
     "EditDatasetSaver": "Edit Dataset Saver",
-    "SmartImageResizeForBucket": "Smart Image Resize for Bucket",
     "TextBlocker": "Text Blocker",
     "ImageIterator": "Image Iterator",
     "ImageSaver": "Image Saver",
