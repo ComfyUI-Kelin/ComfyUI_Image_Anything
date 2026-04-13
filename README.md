@@ -152,7 +152,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 ### 4. 图片文件夹迭代器 (`Iterator`)
 
 **Image Iterator**
-从指定文件夹中逐张迭代加载图片，每次执行加载一张，配合 ComfyUI 的 Auto Queue 模式可自动遍历整个文件夹。
+从指定文件夹中逐张迭代加载图片，每次执行加载一张，配合 ComfyUI 的 Auto Queue 模式可自动遍历整个文件夹。支持递归扫描子文件夹，并输出子文件夹路径以便保存时保持原始目录结构。
 
 **参数**:
 - **folder_path** (必需): 图片文件夹的绝对路径
@@ -160,6 +160,9 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 - **mode** (必需): 迭代模式
   - `sequential`: 遍历完所有图片后自动停止
   - `loop`: 循环迭代
+- **recursive** (必需): 是否递归扫描子文件夹（默认：False）
+  - `Current Only`: 仅扫描当前文件夹中的图片
+  - `Recursive`: 递归扫描所有子文件夹中的图片
 - **start_index** (可选): 起始索引，可跳转到指定位置（默认：0）
 - **reset** (可选): 重置迭代器到起始位置（默认：False）
 
@@ -168,6 +171,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 - `mask`: 图片遮罩（支持透明通道）
 - `filename`: 文件名（不含扩展名）
 - `filename_with_ext`: 完整文件名（含扩展名）
+- `subfolder`: 图片相对于根文件夹的子目录路径（非递归模式下为空字符串）
 - `current_index`: 当前索引
 - `total_count`: 图片总数
 
@@ -178,13 +182,42 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 - **image** (必需): 处理后的图片
 - **filename** (必需): 文件名（不含扩展名），可从 Image Iterator 连接
 - **save_path** (必需): 保存路径（绝对路径），留空则保存到 ComfyUI 默认输出目录
+- **subfolder** (可选): 子文件夹路径，可从 Image Iterator 的 `subfolder` 输出连接。连接后保存时会自动在 `save_path` 下创建对应的子目录结构
 
-**使用方式**:
+**基本使用**:
 ```
 [Image Iterator] ──→ [处理节点] ──→ [Image Saver]
       └── filename ──────────────────→ filename
 ```
 开启 ComfyUI 的 **Auto Queue** 模式，点击 Queue Prompt 即可自动逐张处理文件夹中的所有图片。
+
+**递归扫描 + 保持目录结构**:
+```
+[Image Iterator (recursive=True)] ──→ [处理节点] ──→ [Image Saver]
+      ├── filename ───────────────────────────────────→ filename
+      └── subfolder ──────────────────────────────────→ subfolder
+```
+开启 `Recursive` 后，迭代器会递归扫描所有子文件夹。将 `subfolder` 输出连接到 Image Saver，保存时会自动保持原始目录结构。例如：
+
+源文件夹：
+```
+/input/
+  ├── cats/
+  │   ├── cat1.png
+  │   └── cat2.png
+  └── dogs/
+      └── dog1.png
+```
+
+保存结果（save_path 设为 `/output/`）：
+```
+/output/
+  ├── cats/
+  │   ├── cat1.png
+  │   └── cat2.png
+  └── dogs/
+      └── dog1.png
+```
 
 ### 5. 文本阻塞器 (`Text`)
 
