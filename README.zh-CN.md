@@ -163,8 +163,8 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
   - `sequential`: 遍历完所有图片后自动停止
   - `loop`: 循环迭代
 - **recursive** (必需): 是否递归扫描子文件夹（默认：False）
-  - `Current Only`: 仅扫描当前文件夹中的图片
-  - `Recursive`: 递归扫描所有子文件夹中的图片
+  - `Subfolders Off`: 仅扫描当前文件夹中的图片
+  - `Subfolders On`: 递归扫描所有子文件夹中的图片
 - **start_index** (可选): 起始索引，可跳转到指定位置（默认：0）
 - **reset** (可选): 重置迭代器到起始位置（默认：False）
 
@@ -182,8 +182,8 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 
 **参数**:
 - **image** (必需): 处理后的图片
-- **filename** (必需): 文件名（不含扩展名），可从 Image Iterator 连接
 - **save_path** (必需): 保存路径（绝对路径），留空则保存到 ComfyUI 默认输出目录
+- **filename** (可选): 文件名（不含扩展名），可从 Image Iterator 连接。留空则使用 ComfyUI 默认命名
 - **subfolder** (可选): 子文件夹路径，可从 Image Iterator 的 `subfolder` 输出连接。连接后保存时会自动在 `save_path` 下创建对应的子目录结构
 
 **基本使用**:
@@ -199,7 +199,7 @@ git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
       ├── filename ───────────────────────────────────→ filename
       └── subfolder ──────────────────────────────────→ subfolder
 ```
-开启 `Recursive` 后，迭代器会递归扫描所有子文件夹。将 `subfolder` 输出连接到 Image Saver，保存时会自动保持原始目录结构。例如：
+开启 `Subfolders On` 后，迭代器会递归扫描所有子文件夹。将 `subfolder` 输出连接到 Image Saver，保存时会自动保持原始目录结构。例如：
 
 源文件夹：
 ```
