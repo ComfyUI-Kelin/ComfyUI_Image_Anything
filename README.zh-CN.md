@@ -2,11 +2,10 @@
 
 [**English**](README.md) | **中文**
 
-[![GitHub stars](https://img.shields.io/github/stars/ComfyUI-Kelin/ComfyUI_Image_Anything?style=social)](https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything)
-[![GitHub forks](https://img.shields.io/github/forks/ComfyUI-Kelin/ComfyUI_Image_Anything?style=social)](https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![ComfyUI](https://img.shields.io/badge/ComfyUI-Custom_Nodes-blue)](https://github.com/comfyanonymous/ComfyUI)
-[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)
+[![GitHub stars](https://img.shields.io/github/stars/ComfyUI-Kelin/ComfyUI_Image_Anything?style=for-the-badge&logo=github&color=181717)](https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything)
+[![License: MIT](https://img.shields.io/badge/License-MIT-10B981?style=for-the-badge)](LICENSE)
+[![ComfyUI](https://img.shields.io/badge/ComfyUI-Custom_Nodes-6366F1?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJMMyA3djEwbDkgNSA5LTVWN3oiLz48L3N2Zz4=)](https://github.com/comfyanonymous/ComfyUI)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 
 **ComfyUI Image Anything** 提供四大核心功能：
 
