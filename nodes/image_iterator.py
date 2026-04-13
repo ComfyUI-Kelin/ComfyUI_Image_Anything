@@ -50,8 +50,8 @@ class ImageIterator:
                 }),
                 "recursive": ("BOOLEAN", {
                     "default": False,
-                    "label_on": "Recursive",
-                    "label_off": "Current Only",
+                    "label_on": "Subfolders On",
+                    "label_off": "Subfolders Off",
                     "tooltip": "是否递归扫描子文件夹中的图片"
                 }),
             },
