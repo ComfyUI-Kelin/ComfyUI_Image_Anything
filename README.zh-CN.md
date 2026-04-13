@@ -242,3 +242,6 @@ output/
 | 迭代器 | `🚦 ComfyUI_Image_Anything` → `Iterator` | Image Iterator, Image Saver |
 | 文本工具 | `🚦 ComfyUI_Image_Anything` → `Text` | Text Blocker |
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ComfyUI-Kelin/ComfyUI_Image_Anything&type=Date)](https://star-history.com/#ComfyUI-Kelin/ComfyUI_Image_Anything&Date)

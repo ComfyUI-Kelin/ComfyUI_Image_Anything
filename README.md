@@ -103,6 +103,10 @@ output/
 
 PNG, JPG, JPEG, BMP, WebP, TIFF, TIF, GIF
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ComfyUI-Kelin/ComfyUI_Image_Anything&type=Date)](https://star-history.com/#ComfyUI-Kelin/ComfyUI_Image_Anything&Date)
+
 ## Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests.
