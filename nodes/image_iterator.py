@@ -192,7 +192,8 @@ class ImageIterator:
                 mask = np.array(frame.convert("RGBA").getchannel("A")).astype(np.float32) / 255.0
                 mask = 1.0 - torch.from_numpy(mask)
             else:
-                mask = torch.zeros((64, 64), dtype=torch.float32, device="cpu")
+                width, height = frame.size
+                mask = torch.zeros((height, width), dtype=torch.float32, device="cpu")
 
             output_images.append(image_tensor)
             output_masks.append(mask.unsqueeze(0))

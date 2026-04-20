@@ -1,303 +1,159 @@
 # ComfyUI Image Anything
 
-[![GitHub stars](https://img.shields.io/github/stars/HuangYuChuh/ComfyUI_Image_Anything?style=social)](https://github.com/HuangYuChuh/ComfyUI_Image_Anything)
-[![GitHub forks](https://img.shields.io/github/forks/HuangYuChuh/ComfyUI_Image_Anything?style=social)](https://github.com/HuangYuChuh/ComfyUI_Image_Anything)
-[![ComfyUI](https://img.shields.io/badge/ComfyUI-Nodes-blue)](https://github.com/comfyanonymous/ComfyUI)
-[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)
+**English** | [**中文**](README.zh-CN.md) | [**日本語**](README.ja.md) | [**한국어**](README.ko.md)
 
-ComfyUI Image Anything 提供几组适合日常批处理的数据流节点：
+[![GitHub stars](https://img.shields.io/github/stars/ComfyUI-Kelin/ComfyUI_Image_Anything?style=flat&logo=github&color=181717&labelColor=282828)](https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything)
+[![License: MIT](https://img.shields.io/badge/License-MIT-10B981?style=flat&labelColor=1a1a2e)](LICENSE)
+[![ComfyUI](https://img.shields.io/badge/ComfyUI-Custom_Nodes-6366F1?style=flat&labelColor=1a1a2e&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+PHBhdGggZD0iTTEyIDJMMyA3djEwbDkgNSA5LTVWN3oiLz48L3N2Zz4=)](https://github.com/comfyanonymous/ComfyUI)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&labelColor=1a1a2e&logo=python&logoColor=white)](https://www.python.org/)
 
-- 逐张遍历文件夹图片
-- 按原文件名稳定保存
-- 自动跳过已经处理过的图片
-- 支持递归子目录并保持目录结构
-- 支持 Auto Queue 和 ComfyUI 实时运行下的连续批处理
-- 支持数据集制作场景下的 Target / Control 配对处理
+A comprehensive set of ComfyUI custom nodes for **batch image processing**, **dataset preparation**, and **folder iteration**. It is designed to make repeated image workflows easier to run, resume, and organize.
 
-## 安装
+## Core Features
 
-### 方式一：Git Clone
+### 1. Image Folder Iterator
+Iterate through images in a folder one by one, with **Auto Queue** and **Instant Run** support for automated batch processing.
 
+- Sequential or loop mode
+- Recursive subfolder scanning with directory structure preservation
+- Outputs filename, original filename, subfolder path, index, and total count
+- Can skip images that already have processed outputs when connected to **Processed Image Check**
+- Paired with **Image Saver** for stable filename-based saving
+
+### 2. Processed Image Check
+Compare the input image name with the output folder before processing. If the expected output already exists, the iterator skips that image and moves to the next one.
+
+- Choose the output folder with a local folder picker
+- Keep the original subfolder structure when processing recursively
+- Choose what happens when an output already exists: skip, overwrite, or error
+- Works with both normal iterator workflows and dataset workflows
+
+### 3. Dataset Auto-Annotation
+Purpose-built for creating training datasets for image editing models (Qwen Edit, Kontext, etc.).
+
+- **EditDatasetLoader**: Iterates through image folders with auto-stop, index lists for re-processing failed images, paired data loading, and optional processed-output skipping
+- **EditDatasetSaver**: Structured saving with original or auto-incremented naming, overwrite control, and multi-format output (jpg/png/webp)
+
+### 4. Batch Workflow Saving
+Save images and text from multiple workflow stages into organized timestamp folders.
+
+- **Image Collector + Text Collector + Batch Image Saver V2**: Modular design, combine any number of image and text batches
+- Auto-generates metadata.json and saves the full ComfyUI workflow for reproducibility
+
+## Installation
+
+### Option 1: Git Clone
 ```bash
 cd /path/to/ComfyUI/custom_nodes
-git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
+git clone https://github.com/ComfyUI-Kelin/ComfyUI_Image_Anything.git
 ```
 
-### 方式二：ComfyUI Manager
+### Option 2: ComfyUI Manager (Recommended)
+Search for **"ComfyUI_Image_Anything"** in ComfyUI Manager and install.
 
-在 ComfyUI Manager 中搜索 `ComfyUI_Image_Anything` 安装。
+## Quick Start
 
-## 节点总览
+### Batch Process a Folder of Images
+```text
+[Processed Image Check] ---> save_spec ---> [Image Iterator]
+                         \-> save_spec ---> [Image Saver]
 
-### Preprocess
+[Image Iterator] --> [Your Processing Nodes] --> [Image Saver]
+      |-- filename -----------------------------> filename
+      |-- subfolder ----------------------------> subfolder
+```
 
-**Smart Image Resize for Bucket**
+1. Set **folder_path** in Image Iterator.
+2. Set **output_root** in Processed Image Check.
+3. Connect `save_spec` to both Image Iterator and Image Saver.
+4. Turn on Auto Queue or Instant Run, then queue once.
 
-用于把图片裁切/缩放到常见训练分辨率桶，适合训练前预处理。
-
-### Edit_Image
-
-**EditDatasetLoader**
-
-用于制作图像编辑数据集，支持：
-
-- 逐张读取输入目录
-- 指定起始索引
-- 指定索引列表重跑
-- Target / Control 成对加载
-- 连接 `Processed Image Check` 后自动跳过已处理文件
-
-**EditDatasetSaver**
-
-用于保存数据集输出，支持：
-
-- 保持原文件名
-- 自动重命名加编号
-- 保存 target image
-- 保存 control image
-- 保存 caption
-- 覆盖已有文件或跳过已有文件
-- 连接 `Processed Image Check` 时使用统一输出规则
-
-### Batch_Save
-
-**Image Collector / Text Collector / Batch Image Saver V2**
-
-用于把多张图片和文本统一保存到一个批处理结果目录中。
-
-### Iterator
-
-**Processed Image Check**
-
-这是新的“已处理图片检测”节点，用来告诉迭代器和保存器：
-
-- 输出目录在哪里
-- 是否保留子目录结构
-- 文件已存在时是跳过、覆盖，还是报错
-
-**Image Iterator**
-
-逐张读取文件夹中的图片。
-
-**Image Saver**
-
-按文件名稳定保存处理后的结果，适合和 `Image Iterator` 一起使用。
-
-### Text
-
-**Text Blocker**
-
-在流程中暂停并手动编辑文本后再继续执行。
-
-## Processed Image Check
-
-`Processed Image Check` 的作用很简单：
-
-- 让系统知道输出目录在哪里
-- 在每次处理前，先去输出目录里看对应结果是否已经存在
-- 如果已经存在，就自动跳过这张图
-
-### 参数
-
-- `output_root`
-  批处理输出目录。支持直接点击按钮选择本地文件夹。
-- `keep_subfolder`
-  是否保留输入目录的子目录结构。
-- `exists_policy`
-  输出已存在时的策略：
-  - `skip`
-  - `overwrite`
-  - `error`
-
-### 当前判断逻辑
-
-假设输入图片是：
+### Example Skip Logic
+If the input image is:
 
 ```text
 input/cat/a.jpg
 ```
 
-`output_root` 是：
+And Processed Image Check uses:
 
 ```text
-output
+output_root = output
+keep_subfolder = true
 ```
 
-并且开启了 `keep_subfolder`，那么系统会检查：
+The workflow checks:
 
 ```text
 output/cat/a.png
 ```
 
-如果这个文件已经存在：
+If that file exists, `a.jpg` is skipped. If it does not exist, the workflow processes it and Image Saver writes `output/cat/a.png`.
 
-- 这张图跳过
-- 直接继续下一张
-
-如果这个文件不存在：
-
-- 继续处理
-- 最终保存为 `output/cat/a.png`
-
-## Iterator 工作流
-
-### Image Iterator
-
-`Image Iterator` 每次执行只处理一张图，但可以自动连续跑完整个文件夹。
-
-#### 参数
-
-- `folder_path`
-- `sort_by`
-  - `name_asc`
-  - `name_desc`
-  - `modified_asc`
-  - `modified_desc`
-- `mode`
-  - `sequential`
-  - `loop`
-- `recursive`
-- `start_index`
-- `reset`
-- `save_spec`
-  可选。连接 `Processed Image Check` 后启用“已处理自动跳过”。
-
-#### 输出
-
-- `image`
-- `mask`
-- `filename`
-- `filename_with_ext`
-- `subfolder`
-- `current_index`
-- `total_count`
-
-### Image Saver
-
-#### 参数
-
-- `image`
-- `save_path`
-- `filename`
-- `subfolder`
-- `save_spec`
-  可选。连接 `Processed Image Check` 后，会按统一规则保存为稳定文件名。
-
-## 推荐连接方式
-
+### Prepare a Training Dataset
 ```text
-[Processed Image Check] ---> save_spec ---> [Image Iterator]
-                         \-> save_spec ---> [Image Saver]
+[Processed Image Check] ---> save_spec ---> [EditDatasetLoader]
+                         \-> save_spec ---> [EditDatasetSaver]
 
-[Image Iterator] ---> [处理节点] ---> [Image Saver]
-       |                                ^
-       +---- filename ------------------+
-       +---- subfolder -----------------+
+[EditDatasetLoader] --> [Processing / Captioning] --> [EditDatasetSaver]
 ```
 
-## 连续批处理说明
+1. Point the Loader to your image folder.
+2. Set the Saver to **Keep Original** naming when using Processed Image Check.
+3. Choose the Saver's `save_format` if you need jpg/png/webp.
+4. Auto Queue handles the rest and stops automatically when all images are processed or skipped.
 
-### Auto Queue
+## Node Reference
 
-使用 Auto Queue 时，迭代器会自动处理完整个文件夹，直到全部完成或全部被跳过。
+| Category | Node | Description |
+|----------|------|-------------|
+| Iterator | **Processed Image Check** | Defines the output folder and skip rules for already processed images |
+| Iterator | **Image Iterator** | Load images one-by-one from a folder with Auto Queue and Instant Run support |
+| Iterator | **Image Saver** | Save processed images with optional subfolder structure preservation |
+| Dataset | **EditDatasetLoader** | Iterate dataset images with paired loading, failure re-processing, and processed-output skipping |
+| Dataset | **EditDatasetSaver** | Save dataset outputs with structured naming and format control |
+| Batch Save | **Batch Image Saver V2** | Dynamic batch saving with timestamp organization |
+| Batch Save | **Image Collector** | Collect up to 5 images with custom save names |
+| Batch Save | **Text Collector** | Collect up to 5 text outputs with custom filenames |
+| Text | **Text Blocker** | Pause workflow for manual text review/editing before continuing |
 
-### ComfyUI 实时运行
+### Finding Nodes in ComfyUI
 
-现在也支持 ComfyUI 的实时运行模式：
+All nodes are under the `ComfyUI_Image_Anything` category (marked with a traffic light icon):
 
-- 你只需要启动一次
-- 每张处理完成后会自动继续下一张
-- 遇到已存在的输出文件会自动跳过
-- 当整个文件夹处理完成后会自动停止
+| Subcategory | Path |
+|-------------|------|
+| Dataset | `ComfyUI_Image_Anything` > `Edit_Image` |
+| Batch Save | `ComfyUI_Image_Anything` > `Batch_Save` |
+| Iterator | `ComfyUI_Image_Anything` > `Iterator` |
+| Text | `ComfyUI_Image_Anything` > `Text` |
 
-## 递归扫描和目录保持
+## Output Structure
 
-如果：
-
-- `Image Iterator` 开启 `recursive=True`
-- `Processed Image Check` 开启 `keep_subfolder=True`
-
-那么输入目录结构会映射到输出目录。
-
-### 示例
-
-输入目录：
-
+Each batch run creates an organized timestamp folder:
 ```text
-/input/
-  /cats/
-    cat1.jpg
-    cat2.jpg
-  /dogs/
-    dog1.jpg
+output/
+  batch_saves/
+    task_20251130_143022/
+      cover_01.png
+      detail_02.png
+      prompt.txt
+      metadata.json
+      workflow.json       # Full ComfyUI workflow (drag to reload)
 ```
 
-输出目录：
+## Supported Image Formats
 
-```text
-/output/
-  /cats/
-    cat1.png
-    cat2.png
-  /dogs/
-    dog1.png
-```
+PNG, JPG, JPEG, BMP, WebP, TIFF, TIF, GIF
 
-## Edit Dataset Workflow
+## Star History
 
-### EditDatasetLoader
+[![Star History Chart](https://api.star-history.com/svg?repos=ComfyUI-Kelin/ComfyUI_Image_Anything&type=Date)](https://star-history.com/#ComfyUI-Kelin/ComfyUI_Image_Anything&Date)
 
-适合做图像编辑数据集，常见参数：
+## Contributing
 
-- `input_dir`
-- `start_index`
-- `auto_next`
-- `reset_iterator`
-- `index_list`
-- `target_img_suffix`
-- `control_img_suffix`
-- `save_spec`
+Contributions are welcome! Feel free to open issues or submit pull requests.
 
-### EditDatasetSaver
+## License
 
-常见参数：
-
-- `output_root`
-- `naming_style`
-- `filename_prefix`
-- `allow_overwrite`
-- `filename_stem`
-- `save_image_control`
-- `save_image_target`
-- `save_caption`
-- `save_format`
-- `output_dir`
-- `save_spec`
-
-### 配对加载示例
-
-如果目录中有：
-
-```text
-Dog_O.jpg
-Dog_W.png
-```
-
-并设置：
-
-- `target_img_suffix = _O`
-- `control_img_suffix = _W`
-
-那么 Loader 读取 `Dog_O.jpg` 时，会自动寻找 `Dog_W.png` 作为 control 图输出。
-
-## 节点查找
-
-安装后可在以下分类中找到：
-
-| 分类 | 路径 | 节点 |
-|------|------|------|
-| 预处理 | `ComfyUI_Image_Anything -> Preprocess` | Smart Image Resize for Bucket |
-| 数据集 | `ComfyUI_Image_Anything -> Edit_Image` | EditDatasetLoader, EditDatasetSaver |
-| 批量保存 | `ComfyUI_Image_Anything -> Batch_Save` | Batch Image Saver V2, Image Collector, Text Collector |
-| 迭代器 | `ComfyUI_Image_Anything -> Iterator` | Processed Image Check, Image Iterator, Image Saver |
-| 文本工具 | `ComfyUI_Image_Anything -> Text` | Text Blocker |
+[MIT](LICENSE)

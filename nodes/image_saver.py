@@ -54,7 +54,7 @@ class ImageSaver:
                     "ITERATOR_SAVE_SPEC",
                     {
                         "forceInput": True,
-                        "tooltip": "Optional shared save rules from Iterator Save Spec.",
+                        "tooltip": "Optional shared save rules from Processed Image Check.",
                     },
                 ),
             },
@@ -92,8 +92,14 @@ class ImageSaver:
         else:
             output_dir = self.output_dir
 
-        if subfolder and subfolder.strip():
-            output_dir = os.path.join(output_dir, subfolder.strip())
+        clean_subfolder = subfolder.strip() if subfolder else ""
+        if clean_subfolder:
+            base_dir = os.path.realpath(output_dir)
+            candidate = os.path.realpath(os.path.join(base_dir, clean_subfolder))
+            if candidate.startswith(base_dir + os.sep) or candidate == base_dir:
+                output_dir = candidate
+            else:
+                print(f"[ImageSaver] Warning: subfolder '{clean_subfolder}' would escape the output directory, ignoring it.")
 
         os.makedirs(output_dir, exist_ok=True)
 

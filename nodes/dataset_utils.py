@@ -1,5 +1,6 @@
 import fnmatch
 import os
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -57,7 +58,7 @@ class EditDatasetLoader:
     RETURN_TYPES = ("IMAGE", "IMAGE", "STRING", "STRING", "INT")
     RETURN_NAMES = ("control_img", "target_img", "filename_stem", "directory", "current_index")
     FUNCTION = "load_data"
-    CATEGORY = "🚦 ComfyUI_Image_Anything/Edit_Image"
+    CATEGORY = "\U0001F6A6 ComfyUI_Image_Anything/Edit_Image"
 
     @classmethod
     def IS_CHANGED(cls, input_dir, start_index, auto_next, reset_iterator,
@@ -286,7 +287,7 @@ class EditDatasetSaver:
     RETURN_TYPES = ()
     OUTPUT_NODE = True
     FUNCTION = "save_dataset"
-    CATEGORY = "🚦 ComfyUI_Image_Anything/Edit_Image"
+    CATEGORY = "\U0001F6A6 ComfyUI_Image_Anything/Edit_Image"
 
     def save_dataset(self, output_root, naming_style, filename_prefix, allow_overwrite,
                      filename_stem="", save_image_control=None, save_image_target=None, save_caption=None,
@@ -338,7 +339,7 @@ class EditDatasetSaver:
             final_name = f"{filename_prefix}_{current_idx:04d}"
             _SAVER_COUNTERS[key] += 1
         else:
-            final_name = filename_stem.strip() if filename_stem else "unknown"
+            final_name = filename_stem.strip() if filename_stem else f"unknown_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
 
         target_path = os.path.join(target_dir, f"{final_name}.{save_format}")
         control_path = os.path.join(control_dir, f"{final_name}.{save_format}")
@@ -377,7 +378,7 @@ class EditDatasetSaver:
                         save_image_control=None, save_image_target=None, save_caption=None, save_format="jpg"):
         spec = normalize_save_spec(save_spec)
         if naming_style != "Keep Original":
-            raise ValueError("Iterator Save Spec only supports 'Keep Original' naming in EditDatasetSaver.")
+            raise ValueError("Processed Image Check only supports 'Keep Original' naming in EditDatasetSaver.")
 
         final_name = (filename_stem or "").strip()
         if not final_name:
