@@ -39,7 +39,7 @@ def normalize_save_spec(save_spec):
     }
 
 
-def build_output_path(save_spec, filename, subfolder="", leaf_dir=""):
+def build_output_path(save_spec, filename, subfolder="", leaf_dir="", file_ext=None):
     spec = normalize_save_spec(save_spec)
     clean_name = (filename or "").strip()
     if not clean_name:
@@ -54,7 +54,7 @@ def build_output_path(save_spec, filename, subfolder="", leaf_dir=""):
             parts.append(normalized_subfolder)
 
     output_dir = os.path.join(*parts)
-    return os.path.join(output_dir, f"{clean_name}{normalize_extension(spec['file_ext'])}")
+    return os.path.join(output_dir, f"{clean_name}{normalize_extension(file_ext or spec['file_ext'])}")
 
 
 def ensure_parent_dir(path):

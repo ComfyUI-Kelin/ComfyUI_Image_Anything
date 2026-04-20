@@ -8,7 +8,6 @@ from PIL import Image, ImageOps
 from .auto_queue_control import stop_current_iteration
 from .save_resolver import (
     build_output_path,
-    is_processing_complete,
     normalize_extension,
     normalize_save_spec,
 )
@@ -16,6 +15,7 @@ from .save_resolver import (
 
 _LOADER_COUNTERS = {}
 _SAVER_COUNTERS = {}
+_SAVE_SPEC_IMAGE_FORMATS = ("png", "jpg", "webp")
 
 
 class EditDatasetLoader:
@@ -76,11 +76,20 @@ class EditDatasetLoader:
         return stem
 
     @staticmethod
-    def _is_completed(filename_stem, save_spec):
+    def _iter_expected_outputs(filename_stem, save_spec):
         if save_spec is None:
-            return False
-        target_path = build_output_path(save_spec, filename_stem, leaf_dir="target_images")
-        return is_processing_complete(target_path, save_spec)
+            return []
+
+        outputs = []
+        for file_ext in _SAVE_SPEC_IMAGE_FORMATS:
+            outputs.append(build_output_path(save_spec, filename_stem, leaf_dir="target_images", file_ext=file_ext))
+            outputs.append(build_output_path(save_spec, filename_stem, leaf_dir="control_images", file_ext=file_ext))
+        outputs.append(build_output_path(save_spec, filename_stem, leaf_dir="target_images", file_ext="txt"))
+        return outputs
+
+    @classmethod
+    def _is_completed(cls, filename_stem, save_spec):
+        return any(os.path.exists(path) for path in cls._iter_expected_outputs(filename_stem, save_spec))
 
     def load_data(self, input_dir, start_index, auto_next, reset_iterator,
                   index_list="", target_img_suffix="", control_img_suffix="", save_spec=None):
@@ -290,6 +299,7 @@ class EditDatasetSaver:
                 save_image_control=save_image_control,
                 save_image_target=save_image_target,
                 save_caption=save_caption,
+                save_format=save_format,
             )
 
         if output_dir and output_dir.strip():
@@ -364,7 +374,7 @@ class EditDatasetSaver:
         return {}
 
     def _save_with_spec(self, save_spec, naming_style, filename_stem,
-                        save_image_control=None, save_image_target=None, save_caption=None):
+                        save_image_control=None, save_image_target=None, save_caption=None, save_format="jpg"):
         spec = normalize_save_spec(save_spec)
         if naming_style != "Keep Original":
             raise ValueError("Iterator Save Spec only supports 'Keep Original' naming in EditDatasetSaver.")
@@ -373,16 +383,24 @@ class EditDatasetSaver:
         if not final_name:
             raise ValueError("filename_stem is required when using save_spec in EditDatasetSaver.")
 
-        target_path = build_output_path(spec, final_name, leaf_dir="target_images")
-        control_path = build_output_path(spec, final_name, leaf_dir="control_images")
+        target_path = build_output_path(spec, final_name, leaf_dir="target_images", file_ext=save_format)
+        control_path = build_output_path(spec, final_name, leaf_dir="control_images", file_ext=save_format)
         caption_path = os.path.splitext(target_path)[0] + ".txt"
 
-        if spec["exists_policy"] == "skip" and is_processing_complete(target_path, spec):
+        requested_paths = []
+        if save_image_control is not None:
+            requested_paths.append(control_path)
+        if save_image_target is not None:
+            requested_paths.append(target_path)
+        if save_caption is not None:
+            requested_paths.append(caption_path)
+
+        if spec["exists_policy"] == "skip" and requested_paths and all(os.path.exists(path) for path in requested_paths):
             print(f"EditDatasetSaver: Skipping completed sample {final_name}.")
             return {}
 
         if spec["exists_policy"] == "error":
-            for path in (target_path, control_path, caption_path):
+            for path in requested_paths:
                 if os.path.exists(path):
                     raise FileExistsError(f"Output already exists: {path}")
 

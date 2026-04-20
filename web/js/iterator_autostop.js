@@ -11,6 +11,7 @@ let queuePromptPatched = false;
 let toastRoot = null;
 let instantRunIteratorMode = false;
 let instantRunRequeuePending = false;
+let currentExecutionHadError = false;
 
 function graphHasIteratorNodes() {
     const iteratorTypes = new Set(["ImageIterator", "EditDatasetLoader"]);
@@ -186,6 +187,7 @@ for (const eventName of STOP_EVENTS) {
         pendingAutoQueueBlocks += 1;
         instantRunIteratorMode = false;
         instantRunRequeuePending = false;
+        currentExecutionHadError = false;
         disarmLegacyAutoQueue();
         stopInstantRunPresentation();
 
@@ -203,10 +205,22 @@ for (const eventName of STOP_EVENTS) {
 
 api.addEventListener("execution_start", () => {
     instantRunRequeuePending = false;
+    currentExecutionHadError = false;
+});
+
+api.addEventListener("execution_error", () => {
+    currentExecutionHadError = true;
 });
 
 api.addEventListener("executing", async ({ detail }) => {
     if (detail != null) {
+        return;
+    }
+
+    if (currentExecutionHadError) {
+        instantRunIteratorMode = false;
+        instantRunRequeuePending = false;
+        console.warn("[ImageIterator] Instant Run batch mode stopped after execution_error.");
         return;
     }
 
