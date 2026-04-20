@@ -9,6 +9,19 @@ const STOP_EVENTS = [
 let pendingAutoQueueBlocks = 0;
 let queuePromptPatched = false;
 let toastRoot = null;
+let instantRunIteratorMode = false;
+let instantRunRequeuePending = false;
+let currentExecutionHadError = false;
+
+function graphHasIteratorNodes() {
+    const iteratorTypes = new Set(["ImageIterator", "EditDatasetLoader"]);
+    const nodes = app?.graph?._nodes ?? [];
+    return nodes.some((node) => iteratorTypes.has(node?.type));
+}
+
+function isInstantRunActive() {
+    return document.querySelector('[data-testid="queue-button"][data-variant="destructive"]') instanceof HTMLElement;
+}
 
 function disarmLegacyAutoQueue() {
     if (app?.ui) {
@@ -155,6 +168,12 @@ function patchQueuePrompt() {
             return false;
         }
 
+        if (graphHasIteratorNodes()) {
+            instantRunIteratorMode = isInstantRunActive();
+        } else {
+            instantRunIteratorMode = false;
+        }
+
         return originalQueuePrompt(number, batchCount, ...rest);
     };
 
@@ -166,6 +185,9 @@ patchQueuePrompt();
 for (const eventName of STOP_EVENTS) {
     api.addEventListener(eventName, (event) => {
         pendingAutoQueueBlocks += 1;
+        instantRunIteratorMode = false;
+        instantRunRequeuePending = false;
+        currentExecutionHadError = false;
         disarmLegacyAutoQueue();
         stopInstantRunPresentation();
 
@@ -180,3 +202,56 @@ for (const eventName of STOP_EVENTS) {
         );
     });
 }
+
+api.addEventListener("execution_start", () => {
+    instantRunRequeuePending = false;
+    currentExecutionHadError = false;
+});
+
+api.addEventListener("execution_error", () => {
+    currentExecutionHadError = true;
+});
+
+api.addEventListener("executing", async ({ detail }) => {
+    if (detail != null) {
+        return;
+    }
+
+    if (currentExecutionHadError) {
+        instantRunIteratorMode = false;
+        instantRunRequeuePending = false;
+        console.warn("[ImageIterator] Instant Run batch mode stopped after execution_error.");
+        return;
+    }
+
+    if (!instantRunIteratorMode || instantRunRequeuePending || pendingAutoQueueBlocks > 0) {
+        return;
+    }
+
+    if (!graphHasIteratorNodes() || !isInstantRunActive()) {
+        instantRunIteratorMode = false;
+        return;
+    }
+
+    instantRunRequeuePending = true;
+
+    window.setTimeout(async () => {
+        try {
+            if (!instantRunIteratorMode || pendingAutoQueueBlocks > 0) {
+                return;
+            }
+
+            console.info("[ImageIterator] Instant Run batch mode: queueing next iterator step.");
+            await app.queuePrompt(0, 1);
+        } catch (error) {
+            console.error("[ImageIterator] Failed to queue next instant-run iterator step.", error);
+            showToast(
+                "Image Anything batch continue failed",
+                error instanceof Error ? error.message : "Failed to queue next iteration."
+            );
+            instantRunIteratorMode = false;
+        } finally {
+            instantRunRequeuePending = false;
+        }
+    }, 120);
+});

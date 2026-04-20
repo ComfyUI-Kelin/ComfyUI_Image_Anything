@@ -5,6 +5,7 @@ from .nodes.dataset_utils import EditDatasetLoader, EditDatasetSaver
 from .nodes.text_blocker import TextBlocker
 from .nodes.image_iterator import ImageIterator
 from .nodes.image_saver import ImageSaver
+from .nodes.save_spec import IteratorSaveSpec
 
 # 节点类映射 - ComfyUI 核心注册
 NODE_CLASS_MAPPINGS = {
@@ -16,6 +17,7 @@ NODE_CLASS_MAPPINGS = {
     "TextBlocker": TextBlocker,
     "ImageIterator": ImageIterator,
     "ImageSaver": ImageSaver,
+    "IteratorSaveSpec": IteratorSaveSpec,
 }
 
 # 节点显示名称映射
@@ -28,6 +30,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "TextBlocker": "Text Blocker",
     "ImageIterator": "Image Iterator",
     "ImageSaver": "Image Saver",
+    "IteratorSaveSpec": "Processed Image Check",
 }
 
 # Web 目录路径，用于加载前端JavaScript
