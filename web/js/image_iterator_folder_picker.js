@@ -21,6 +21,14 @@ const NODE_PICKER_CONFIG = {
         busyLabel: "Choosing save folder...",
         directoryType: "output",
     },
+    IteratorSaveSpec: {
+        pathWidget: "output_root",
+        buttonLabel: "Choose Output Folder",
+        successMessage: "Output folder updated.",
+        cancelledMessage: "Folder selection cancelled.",
+        busyLabel: "Choosing output folder...",
+        directoryType: "output",
+    },
 };
 
 let toastRoot = null;

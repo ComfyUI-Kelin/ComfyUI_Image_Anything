@@ -2,264 +2,302 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/HuangYuChuh/ComfyUI_Image_Anything?style=social)](https://github.com/HuangYuChuh/ComfyUI_Image_Anything)
 [![GitHub forks](https://img.shields.io/github/forks/HuangYuChuh/ComfyUI_Image_Anything?style=social)](https://github.com/HuangYuChuh/ComfyUI_Image_Anything)
-[![ComfyUI](https://img.shields.io/badge/ComfyUI-节点-blue)](https://github.com/comfyanonymous/ComfyUI)
+[![ComfyUI](https://img.shields.io/badge/ComfyUI-Nodes-blue)](https://github.com/comfyanonymous/ComfyUI)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://www.python.org/)
 
-**ComfyUI Image Anything** 提供四大核心功能：
+ComfyUI Image Anything 提供几组适合日常批处理的数据流节点：
 
-1. **批量保存工作流输出**：在一次任务运行中批量保存不同阶段的图片和文本，自动整理到统一的时间戳文件夹中。通过模块化设计（Image Batch + Text Batch + BatchImageSaverV2），你可以灵活组合任意数量的图片批次和文本批次。
+- 逐张遍历文件夹图片
+- 按原文件名稳定保存
+- 自动跳过已经处理过的图片
+- 支持递归子目录并保持目录结构
+- 支持 Auto Queue 和 ComfyUI 实时运行下的连续批处理
+- 支持数据集制作场景下的 Target / Control 配对处理
 
-2. **数据集自动标注**：专为制作图像编辑模型（如 Qwen Edit、Kontext）训练数据集设计。提供自动迭代加载、结构化保存、失败重跑等功能，大幅提升数据集制作效率。
+## 安装
 
-3. **分桶图像标准化**：专为 SDXL/Flux 模型训练优化。智能检测图片比例，自动归一化到 `ai-toolkit` 支持的标准训练 Bucket 分辨率，确保零拉伸、无黑边。
+### 方式一：Git Clone
 
-4. **图片文件夹迭代器**：从指定文件夹中逐张加载图片并执行工作流，配合 Auto Queue 实现全自动批量处理。支持提取文件名、自定义保存路径，适合批量图片处理场景。
-
-## 安装方法
-
-### 方式一：克隆仓库
 ```bash
 cd /path/to/ComfyUI/custom_nodes
 git clone https://github.com/HuangYuChuh/ComfyUI_Image_Anything.git
 ```
 
-### 方式二：ComfyUI Manager（推荐）
-在 ComfyUI Manager 中搜索 "ComfyUI_Image_Anything" 并安装。
+### 方式二：ComfyUI Manager
 
-## 节点参数详解
+在 ComfyUI Manager 中搜索 `ComfyUI_Image_Anything` 安装。
 
-### 1. 智能分桶预处理 (`Preprocess`)
+## 节点总览
+
+### Preprocess
+
 **Smart Image Resize for Bucket**
-专为训练准备的图像预处理节点。它会自动将任意比例的图片 Center Crop 到最接近的标准 Bucket 尺寸。
 
-*   **image**: 输入图片
-*   **mode**: 处理模式
-    *   `Smart (Auto Detect)`: (推荐) 自动计算宽高比，匹配最接近的标准尺寸 (1:1, 3:4, 4:3, 9:16, 16:9)。
-    *   `Force 1024x1024 (1:1)`: 强制方形
-    *   `Force 832x1152 (3:4)`: 强制标准竖图 (人像常用)
-    *   `Force 1152x832 (4:3)`: 强制标准横图
-    *   `Force 768x1344 (9:16)`: 强制长竖图 (手机壁纸)
-    *   `Force 1344x768 (16:9)`: 强制宽屏横图
+用于把图片裁切/缩放到常见训练分辨率桶，适合训练前预处理。
 
-> **支持的 SDXL/Flux 标准 Bucket**: 1024x1024, 832x1152, 1152x832, 768x1344, 1344x768.
+### Edit_Image
 
-### 2. 自动数据集标注 (`Edit_Image`)
-这些是专为自动化制作模型数据集（如 Qwen Edit、Kontext 等）设计的新节点。
+**EditDatasetLoader**
 
-**EditDatasetLoader**:
-- **input_dir** (必需): 图片文件夹路径
-- **start_index** (必需): 起始索引（默认：0）
-- **auto_next** (可选): 自动递增索引（默认：True），关闭后固定读取 start_index
-- **reset_iterator** (可选): 强制重置索引到 start_index（默认：False）
-- **index_list** (可选): 逗号分隔的索引列表，如 `"5,12,23"`。用于**重新处理失败的图片**，填写后只加载指定索引的图片。
-- **自动停止**: 当遍历完文件夹中所有图片（或指定索引）后，会自动触发停止信号终止工作流。
+用于制作图像编辑数据集，支持：
 
-**EditDatasetSaver**:
-- **output_root** (必需): 保存根目录
-- **naming_style** (必需): 
-    - `Keep Original`: 保持原文件名
-    - `Rename (Prefix + Auto-Inc)`: 使用前缀+自动序号
-- **filename_prefix**: 重命名时的前缀（默认："Dataset"）
-- **allow_overwrite** (新增): 是否允许覆盖已有文件。开启后配合 `index_list` 使用，可自动覆盖错误的数据对。
-- **filename_stem**: 原始文件名（可选，连接 Loader 的输出）
-- **save_image_control/target**: 输入图片（可选）
-- **save_caption**: 输入文本标题（可选）
-- **save_format**: 保存格式（可选，支持 jpg/png/webp，默认 jpg）
-- **output_dir**: 强制输出路径（可选）。连接此端口将忽略 `output_root`，优先使用传入的路径。
+- 逐张读取输入目录
+- 指定起始索引
+- 指定索引列表重跑
+- Target / Control 成对加载
+- 连接 `Processed Image Check` 后自动跳过已处理文件
 
-#### 高级功能：配对数据加载 (Paired Data Loading)
-支持加载训练常用的 "Target Image + Control Image" 数据对。
+**EditDatasetSaver**
 
-**参数设置**:
-- `target_img_suffix`: Target 图片的后缀（如 `_O`）。填写后，通过 `target_img` 端口输出。
-- `control_img_suffix`: Control 图片的后缀（如 `_W`）。填写后，通过 `control_img` 端口输出。
+用于保存数据集输出，支持：
 
-**逻辑**:
-加载器会自动筛选包含 `target_img_suffix` 的图片，并自动查找对应 `control_img_suffix` 的配对文件。
-例如：填 `_O` 和 `_W`。加载 `Dog_O.jpg` 时，自动找到 `Dog_W.png` 并作为 control 输出。
+- 保持原文件名
+- 自动重命名加编号
+- 保存 target image
+- 保存 control image
+- 保存 caption
+- 覆盖已有文件或跳过已有文件
+- 连接 `Processed Image Check` 时使用统一输出规则
 
-**Outputs**:
-- `control_img`: 原图/条件图 (对应 `_W`)，**推荐放在上面**。
-- `target_img`: 目标图 (对应 `_O`)。
-- `target_img`: 目标图 (对应 `_O`)。
-- `filename_stem`: 文件名（**已自动去除后缀**）。例如加载 `A_O.jpg`，这里输出 `A`。这使得 Saver 可以直接保存为干净的文件名。
-- `filename_stem`: 文件名（**已自动去除后缀**）。例如加载 `A_O.jpg`，这里输出 `A`。这使得 Saver 可以直接保存为干净的文件名。
-- `directory`: 当前图片的文件夹路径。
-- `current_index`: 当前图片的索引值 (int)。
+### Batch_Save
 
-**EditDatasetSaver更新**:
-无需任何额外设置。只要 `EditDatasetLoader` 获取到了干净的 `filename_stem`，Saver 就会自动以该名字保存所有输出文件（Control/Target/Txt），确保文件名一致。
-若要路径透传，可将 `directory` 连接到 Saver 的 `output_dir`。
+**Image Collector / Text Collector / Batch Image Saver V2**
 
-### 3. V2 模块化批量保存 (`Batch_Save`)
+用于把多张图片和文本统一保存到一个批处理结果目录中。
 
-#### Image Batch 节点 (`image_batch`)
-- **image_1 到 image_5** (可选): 最多5张图片输入
-- **save_name_1 到 save_name_5** (可选): 对应每张图片的保存名称
+### Iterator
 
-#### Text Batch 节点 (`text_batch`)
-- **text_1 到 text_5** (可选): 5个通用文本字段，可输入任意内容
-- **name_1 到 name_5** (可选): 对应每个文本的文件名
+**Processed Image Check**
 
-#### Batch Image Saver V2 主节点
-- **output_folder** (必需): 输出文件夹名称（默认："batch_saves"）
-- **enabled** (可选): 是否启用此节点（默认：true）
-- **batch_1, batch_2, ...** (必需): 连接 Image Batch 节点的输出
-- **text_batch_1, text_batch_2, ...** (可选): 连接 Text Batch 节点的输出
+这是新的“已处理图片检测”节点，用来告诉迭代器和保存器：
 
-### V1 版本 (Batch Image Saver V1)
-*(保留用于向后兼容，建议使用 V2)*
-- **input_count** (必需): 图片数量（1-5）
-- **image_1** (必需): 第一张图片
-- **save_name_1** (必需): 第一张图片的保存名称（默认："image"）
-- **output_folder** (必需): 输出文件夹名称（默认："batch_saves"）
-
-## 使用示例
-
-### 场景一：自动清洗数据集 (Auto Clean Dataset)
-1.  **加载**: 使用 `EditDatasetLoader` 读取原始图片文件夹。
-2.  **处理**: 连接 `Smart Image Resize for Bucket` 节点，模式设为 `Smart (Auto Detect)`。
-3.  **保存**: 连接 `EditDatasetSaver` (或普通 Save Image)，即可得到完美符合训练标准的数据集。
-
-### 场景二：自动标注数据集流程 (`Edit Dataset Workflow`)
-这是一个专门用于构建和标注图像编辑模型数据集的流程：
-1. **加载图片**: 使用 `EditDatasetLoader` 指向你的图片文件夹。
-2. **处理流程**: 在中间连接任意的处理节点（如图像反推提示词、抠图、风格迁移等）。
-3. **保存结果**: 连接 `EditDatasetSaver`。
-   - **Output Root**: 设置保存结果的根目录。
-   - **Naming Style**: 
-     - 想要保持文件名不变？选 `Keep Original` 并连接 loader 的 `filename_stem`。
-     - 想要统一重命名？选 `Rename (Prefix + Auto-Inc)` 并设置前缀（如 `Dataset`）。
-   - **Auto Increment**: 即使中断重启，"Rename" 模式也会自动检测已有文件，从下一个序号开始保存，**不会覆盖旧数据**。
-
-#### 高级技巧：重跑失败图片
-当发现某些图片（如索引 5, 12, 23）处理失败时，无需重跑整个数据集：
-1. **Loader 设置**：
-   - `index_list`: 填入 `"5,12,23"`。
-   - `reset_iterator`: 开启（确保从列表第一个开始）。
-2. **Saver 设置**：
-   - `allow_overwrite`: 开启 `True`（允许覆盖旧的错误结果）。
-3. **运行**：节点只处理这 3 张图片，完成后自动停止。
-
-### 场景三：多批次组合保存 (V2)
-```
-[图片1-5] → [Image Batch A] → batch_1 → \
-[文本A] → [Text Batch A] → text_batch_1 →  → [Batch Image Saver V2]
-[图片6-7] → [Image Batch B] → batch_2 → /
-[文本B] → [Text Batch B] → text_batch_2 → /
-```
-
-### 4. 图片文件夹迭代器 (`Iterator`)
+- 输出目录在哪里
+- 是否保留子目录结构
+- 文件已存在时是跳过、覆盖，还是报错
 
 **Image Iterator**
-从指定文件夹中逐张迭代加载图片，每次执行加载一张，配合 ComfyUI 的 Auto Queue 模式可自动遍历整个文件夹。支持递归扫描子文件夹，并输出子文件夹路径以便保存时保持原始目录结构。
 
-**参数**:
-- **folder_path** (必需): 图片文件夹的绝对路径
-- **sort_by** (必需): 排序方式（name_asc / name_desc / modified_asc / modified_desc）
-- **mode** (必需): 迭代模式
-  - `sequential`: 遍历完所有图片后自动停止
-  - `loop`: 循环迭代
-- **recursive** (必需): 是否递归扫描子文件夹（默认：False）
-  - `Current Only`: 仅扫描当前文件夹中的图片
-  - `Recursive`: 递归扫描所有子文件夹中的图片
-- **start_index** (可选): 起始索引，可跳转到指定位置（默认：0）
-- **reset** (可选): 重置迭代器到起始位置（默认：False）
-
-**输出**:
-- `image`: 当前图片
-- `mask`: 图片遮罩（支持透明通道）
-- `filename`: 文件名（不含扩展名）
-- `filename_with_ext`: 完整文件名（含扩展名）
-- `subfolder`: 图片相对于根文件夹的子目录路径（非递归模式下为空字符串）
-- `current_index`: 当前索引
-- `total_count`: 图片总数
+逐张读取文件夹中的图片。
 
 **Image Saver**
-保存处理后的图片，支持自定义路径和文件名，可配合 Image Iterator 使用。
 
-**参数**:
-- **image** (必需): 处理后的图片
-- **filename** (必需): 文件名（不含扩展名），可从 Image Iterator 连接
-- **save_path** (必需): 保存路径（绝对路径），留空则保存到 ComfyUI 默认输出目录
-- **subfolder** (可选): 子文件夹路径，可从 Image Iterator 的 `subfolder` 输出连接。连接后保存时会自动在 `save_path` 下创建对应的子目录结构
+按文件名稳定保存处理后的结果，适合和 `Image Iterator` 一起使用。
 
-**基本使用**:
-```
-[Image Iterator] ──→ [处理节点] ──→ [Image Saver]
-      └── filename ──────────────────→ filename
-```
-开启 ComfyUI 的 **Auto Queue** 模式，点击 Queue Prompt 即可自动逐张处理文件夹中的所有图片。
-
-**递归扫描 + 保持目录结构**:
-```
-[Image Iterator (recursive=True)] ──→ [处理节点] ──→ [Image Saver]
-      ├── filename ───────────────────────────────────→ filename
-      └── subfolder ──────────────────────────────────→ subfolder
-```
-开启 `Recursive` 后，迭代器会递归扫描所有子文件夹。将 `subfolder` 输出连接到 Image Saver，保存时会自动保持原始目录结构。例如：
-
-源文件夹：
-```
-/input/
-  ├── cats/
-  │   ├── cat1.png
-  │   └── cat2.png
-  └── dogs/
-      └── dog1.png
-```
-
-保存结果（save_path 设为 `/output/`）：
-```
-/output/
-  ├── cats/
-  │   ├── cat1.png
-  │   └── cat2.png
-  └── dogs/
-      └── dog1.png
-```
-
-### 5. 文本阻塞器 (`Text`)
+### Text
 
 **Text Blocker**
 
-工作流中的文本中转编辑节点。当执行到此节点时，会弹出侧边编辑面板，让你修改上游传入的文本后再继续执行。非常适合需要人工检查或微调提示词的场景。
+在流程中暂停并手动编辑文本后再继续执行。
 
-**参数**:
-- **text** (必需): 从上游节点连接输入的文本（无widget输入框，强制接收连接）
-- **enabled** (可选): 是否启用阻塞编辑（默认：True）
-  - `True`: 执行时弹出编辑框，等待用户确认
-  - `False`: 直接透传文本，不阻塞
+## Processed Image Check
 
-**使用场景**:
-```
-[LLM生成提示词] ──→ [Text Blocker] ──→ [KSampler/图像生成]
-```
-执行时会在右侧弹出编辑面板，可以预览和修改LLM生成的提示词，确认后继续生成图像。
+`Processed Image Check` 的作用很简单：
 
-## 输出文件结构
+- 让系统知道输出目录在哪里
+- 在每次处理前，先去输出目录里看对应结果是否已经存在
+- 如果已经存在，就自动跳过这张图
 
-每次运行都会创建独立的时间戳文件夹：
+### 参数
+
+- `output_root`
+  批处理输出目录。支持直接点击按钮选择本地文件夹。
+- `keep_subfolder`
+  是否保留输入目录的子目录结构。
+- `exists_policy`
+  输出已存在时的策略：
+  - `skip`
+  - `overwrite`
+  - `error`
+
+### 当前判断逻辑
+
+假设输入图片是：
+
+```text
+input/cat/a.jpg
 ```
-output/
-└── batch_saves/
-    └── task_20251130_143022/
-        ├── 封面_01.png          # 保存名称_序号.png 格式
-        ├── 细节_02.png
-        ├── prompt.txt           # ComfyUI Prompt 文本（如果有）
-        ├── metadata.json        # 基本元数据（包含格式化文本）
-        └── workflow.json        # 完整工作流文件（可直接加载）
+
+`output_root` 是：
+
+```text
+output
 ```
+
+并且开启了 `keep_subfolder`，那么系统会检查：
+
+```text
+output/cat/a.png
+```
+
+如果这个文件已经存在：
+
+- 这张图跳过
+- 直接继续下一张
+
+如果这个文件不存在：
+
+- 继续处理
+- 最终保存为 `output/cat/a.png`
+
+## Iterator 工作流
+
+### Image Iterator
+
+`Image Iterator` 每次执行只处理一张图，但可以自动连续跑完整个文件夹。
+
+#### 参数
+
+- `folder_path`
+- `sort_by`
+  - `name_asc`
+  - `name_desc`
+  - `modified_asc`
+  - `modified_desc`
+- `mode`
+  - `sequential`
+  - `loop`
+- `recursive`
+- `start_index`
+- `reset`
+- `save_spec`
+  可选。连接 `Processed Image Check` 后启用“已处理自动跳过”。
+
+#### 输出
+
+- `image`
+- `mask`
+- `filename`
+- `filename_with_ext`
+- `subfolder`
+- `current_index`
+- `total_count`
+
+### Image Saver
+
+#### 参数
+
+- `image`
+- `save_path`
+- `filename`
+- `subfolder`
+- `save_spec`
+  可选。连接 `Processed Image Check` 后，会按统一规则保存为稳定文件名。
+
+## 推荐连接方式
+
+```text
+[Processed Image Check] ---> save_spec ---> [Image Iterator]
+                         \-> save_spec ---> [Image Saver]
+
+[Image Iterator] ---> [处理节点] ---> [Image Saver]
+       |                                ^
+       +---- filename ------------------+
+       +---- subfolder -----------------+
+```
+
+## 连续批处理说明
+
+### Auto Queue
+
+使用 Auto Queue 时，迭代器会自动处理完整个文件夹，直到全部完成或全部被跳过。
+
+### ComfyUI 实时运行
+
+现在也支持 ComfyUI 的实时运行模式：
+
+- 你只需要启动一次
+- 每张处理完成后会自动继续下一张
+- 遇到已存在的输出文件会自动跳过
+- 当整个文件夹处理完成后会自动停止
+
+## 递归扫描和目录保持
+
+如果：
+
+- `Image Iterator` 开启 `recursive=True`
+- `Processed Image Check` 开启 `keep_subfolder=True`
+
+那么输入目录结构会映射到输出目录。
+
+### 示例
+
+输入目录：
+
+```text
+/input/
+  /cats/
+    cat1.jpg
+    cat2.jpg
+  /dogs/
+    dog1.jpg
+```
+
+输出目录：
+
+```text
+/output/
+  /cats/
+    cat1.png
+    cat2.png
+  /dogs/
+    dog1.png
+```
+
+## Edit Dataset Workflow
+
+### EditDatasetLoader
+
+适合做图像编辑数据集，常见参数：
+
+- `input_dir`
+- `start_index`
+- `auto_next`
+- `reset_iterator`
+- `index_list`
+- `target_img_suffix`
+- `control_img_suffix`
+- `save_spec`
+
+### EditDatasetSaver
+
+常见参数：
+
+- `output_root`
+- `naming_style`
+- `filename_prefix`
+- `allow_overwrite`
+- `filename_stem`
+- `save_image_control`
+- `save_image_target`
+- `save_caption`
+- `save_format`
+- `output_dir`
+- `save_spec`
+
+### 配对加载示例
+
+如果目录中有：
+
+```text
+Dog_O.jpg
+Dog_W.png
+```
+
+并设置：
+
+- `target_img_suffix = _O`
+- `control_img_suffix = _W`
+
+那么 Loader 读取 `Dog_O.jpg` 时，会自动寻找 `Dog_W.png` 作为 control 图输出。
 
 ## 节点查找
 
-安装后，在节点列表中查找（所有节点带有 🚦 标识）：
+安装后可在以下分类中找到：
 
 | 分类 | 路径 | 节点 |
 |------|------|------|
-| 预处理 | `🚦 ComfyUI_Image_Anything` → `Preprocess` | Smart Image Resize for Bucket |
-| 数据集 | `🚦 ComfyUI_Image_Anything` → `Edit_Image` | EditDatasetLoader, EditDatasetSaver |
-| 批量保存 | `🚦 ComfyUI_Image_Anything` → `Batch_Save` | Batch Image Saver V2, Image Collector, Text Collector |
-| 迭代器 | `🚦 ComfyUI_Image_Anything` → `Iterator` | Image Iterator, Image Saver |
-| 文本工具 | `🚦 ComfyUI_Image_Anything` → `Text` | Text Blocker |
-
+| 预处理 | `ComfyUI_Image_Anything -> Preprocess` | Smart Image Resize for Bucket |
+| 数据集 | `ComfyUI_Image_Anything -> Edit_Image` | EditDatasetLoader, EditDatasetSaver |
+| 批量保存 | `ComfyUI_Image_Anything -> Batch_Save` | Batch Image Saver V2, Image Collector, Text Collector |
+| 迭代器 | `ComfyUI_Image_Anything -> Iterator` | Processed Image Check, Image Iterator, Image Saver |
+| 文本工具 | `ComfyUI_Image_Anything -> Text` | Text Blocker |
